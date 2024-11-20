@@ -1,0 +1,7 @@
+transaction_id,date,type,amount,category,account_id,note
+1,2024-11-19,Chi tiêu,121212.0,Ăn uống,1,
+2,2024-11-19,Chuyển tiền,12323333.0,Chuyển tiền từ Vi Tiền đến VietComBank,3,error
+3,2024-11-21,Chuyển tiền,12222.0,Chuyển tiền từ Vi Tiền đến VietComBank,3,error
+4,2024-11-21,Gửi tiết kiệm,120000.0,mua nhà,1,
+5,2024-11-21,Chuyển tiền,200000.0,Chuyển tiền từ VietComBank đến Momo,1,
+6,2024-11-21,Thu nhập,800000.0,Tiền lương,1,
