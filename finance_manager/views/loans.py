@@ -9,6 +9,7 @@ from models.loan import Loan, LoanPayment
 from config.settings import PAYMENT_PERIODS, INTEREST_TYPES, LOAN_STATUSES
 from .dialog import Dialog
 from models.account import Account
+from config.colors import BACKGROUND, TEXT_CONTRAST, DANGER, SUCCESS, STATUS_CONTRAST, PRIMARY
 
 class LoansView:
     def __init__(self, parent):
@@ -102,25 +103,36 @@ class LoansView:
         style.configure("Treeview",
                        font=('Helvetica', 11),
                        rowheight=35,
-                       background="#2c3e50",
-                       foreground="white",
-                       fieldbackground="#2c3e50")
+                       background=BACKGROUND['dark'],
+                       foreground=TEXT_CONTRAST['light'],
+                       fieldbackground=BACKGROUND['dark'])
         
         style.configure("Treeview.Heading",
                        font=('Helvetica', 12, 'bold'),
-                       background="#34495e",
-                       foreground="white")
+                       background=BACKGROUND['dark'],
+                       foreground=TEXT_CONTRAST['light'])
         
-        # Tags cho màu sắc
-        self.tree.tag_configure('borrow', background='#e74c3c')    # Đỏ cho khoản vay
-        self.tree.tag_configure('lend', background='#2ecc71')      # Xanh lá cho cho vay
-        self.tree.tag_configure('overdue', background='#c0392b')   # Đỏ đậm cho quá hạn
-        self.tree.tag_configure('completed', background='#27ae60') # Xanh lá đậm cho đã trả
+        # Tags cho màu sắc với độ tương phản cao
+        self.tree.tag_configure('borrow', 
+                              background=DANGER['main'],
+                              foreground=TEXT_CONTRAST['light'])
+        self.tree.tag_configure('lend', 
+                              background=SUCCESS['main'],
+                              foreground=TEXT_CONTRAST['light'])
+        self.tree.tag_configure('overdue', 
+                              background=STATUS_CONTRAST['overdue'],
+                              foreground=TEXT_CONTRAST['light'])
+        self.tree.tag_configure('completed', 
+                              background=STATUS_CONTRAST['completed'],
+                              foreground=TEXT_CONTRAST['light'])
         
         self.refresh_loans_list()
         self.tree.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Frame cho lịch sử thanh toán
+        # Thêm binding cho sự kiện chọn item
+        self.tree.bind('<<TreeviewSelect>>', self.on_loan_selected)
+        
+        # Tạo frame cho lịch sử thanh toán
         payments_frame = ctk.CTkFrame(main_frame)
         payments_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
@@ -159,6 +171,20 @@ class LoansView:
         self.payments_tree.column('Tiền Lãi', width=150)
         self.payments_tree.column('Còn Nợ', width=150)
         self.payments_tree.column('Ghi Chú', width=200)
+        
+        # Style cho payments tree
+        style = ttk.Style()
+        style.configure("Treeview",
+                       font=('Helvetica', 11),
+                       rowheight=35,
+                       background=BACKGROUND['dark'],
+                       foreground=TEXT_CONTRAST['light'],
+                       fieldbackground=BACKGROUND['dark'])
+        
+        # Tags cho màu sắc thanh toán
+        self.payments_tree.tag_configure('payment', 
+                                       background=PRIMARY['main'],
+                                       foreground=TEXT_CONTRAST['light'])
         
         self.payments_tree.pack(fill="both", expand=True, padx=5, pady=5)
         
@@ -213,22 +239,11 @@ class LoansView:
             ), tags=(tag,))
             
     def refresh_payments_list(self, loan_id):
+        """Cập nhật danh sách thanh toán cho khoản vay được chọn"""
         # Xóa dữ liệu cũ
         for item in self.payments_tree.get_children():
             self.payments_tree.delete(item)
             
-        # Style cho payments tree
-        style = ttk.Style()
-        style.configure("Payments.Treeview",
-                       font=('Helvetica', 11),
-                       rowheight=35,
-                       background="#2c3e50",
-                       foreground="white",
-                       fieldbackground="#2c3e50")
-        
-        # Tags cho màu sắc thanh toán
-        self.payments_tree.tag_configure('payment', background='#3498db')  # Xanh dương cho thanh toán
-        
         # Lấy khoản vay
         loans = Loan.get_all()
         loan = next((l for l in loans if l.loan_id == loan_id), None)
@@ -251,6 +266,7 @@ class LoansView:
                 ), tags=('payment',))
 
     def on_loan_selected(self, event):
+        """Xử lý sự kiện khi chọn một khoản vay"""
         selected_items = self.tree.selection()
         if selected_items:
             loan_id = int(self.tree.item(selected_items[0])['values'][0])

@@ -50,6 +50,5 @@ def initialize_database():
         with open(LOAN_PAYMENTS_FILE, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['payment_id', 'loan_id', 'payment_date', 'amount',
-                           'from_account_id', 'to_account_id', 'principal_amount',
-                           'interest_amount', 'note'])
+                           'principal_amount', 'interest_amount', 'note'])
  

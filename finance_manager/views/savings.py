@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime, timedelta
 from models.saving import Saving
 from models.account import Account
+from .dialog import Dialog
 
 class SavingsView:
     def __init__(self, parent):
@@ -294,3 +295,107 @@ class SavingsView:
                 
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể xóa mục tiêu: {str(e)}")
+        
+    def show_edit_dialog(self, saving):
+        """Hiển thị dialog chỉnh sửa mục tiêu tiết kiệm"""
+        dialog = Dialog(self.parent, "Chỉnh Sửa Mục Tiêu Tiết Kiệm")
+        
+        # Goal Name
+        ctk.CTkLabel(dialog.main_frame, text="Tên Mục Tiêu:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        name_entry = ctk.CTkEntry(dialog.main_frame, width=300)
+        name_entry.insert(0, saving.name)
+        name_entry.pack(pady=5)
+        
+        # Account Selection
+        ctk.CTkLabel(dialog.main_frame, text="Tài Khoản:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        accounts = Account.get_all()
+        account_names = [acc.name for acc in accounts]
+        account_var = ctk.StringVar(value=saving.account_name)
+        account_menu = ctk.CTkOptionMenu(
+            dialog.main_frame,
+            values=account_names,
+            variable=account_var,
+            width=300
+        )
+        account_menu.pack(pady=5)
+        
+        # Target Amount
+        ctk.CTkLabel(dialog.main_frame, text="Số Tiền Mục Tiêu:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        target_entry = ctk.CTkEntry(dialog.main_frame, width=300)
+        target_entry.insert(0, str(saving.target_amount))
+        target_entry.pack(pady=5)
+        
+        # Current Amount
+        ctk.CTkLabel(dialog.main_frame, text="Số Tiền Hiện Tại:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        current_entry = ctk.CTkEntry(dialog.main_frame, width=300)
+        current_entry.insert(0, str(saving.current_amount))
+        current_entry.pack(pady=5)
+        
+        # Deadline
+        ctk.CTkLabel(dialog.main_frame, text="Hạn Chót:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        deadline_entry = ctk.CTkEntry(dialog.main_frame, width=300)
+        deadline_entry.insert(0, saving.deadline)
+        deadline_entry.pack(pady=5)
+        
+        # Note
+        ctk.CTkLabel(dialog.main_frame, text="Ghi Chú:", font=("Helvetica", 14, "bold")).pack(pady=5)
+        note_entry = ctk.CTkEntry(dialog.main_frame, width=300)
+        note_entry.insert(0, saving.note)
+        note_entry.pack(pady=5)
+        
+        def save_changes():
+            try:
+                target_amount = float(target_entry.get())
+                current_amount = float(current_entry.get())
+                
+                if target_amount <= 0:
+                    messagebox.showerror("Lỗi", "Số tiền mục tiêu phải lớn hơn 0!")
+                    return
+                    
+                if current_amount < 0:
+                    messagebox.showerror("Lỗi", "Số tiền hiện tại không thể âm!")
+                    return
+                    
+                # Get selected account
+                account = next(acc for acc in accounts if acc.name == account_var.get())
+                
+                # Calculate difference in current amount
+                difference = current_amount - saving.current_amount
+                
+                # Check if account has enough balance for increase
+                if difference > 0 and account.balance < difference:
+                    messagebox.showerror("Lỗi", "Số dư tài khoản không đủ!")
+                    return
+                
+                # Update account balance
+                account.balance -= difference
+                account.save()
+                
+                # Update saving goal
+                saving.name = name_entry.get()
+                saving.target_amount = target_amount
+                saving.current_amount = current_amount
+                saving.deadline = deadline_entry.get()
+                saving.account_id = account.account_id
+                saving.note = note_entry.get()
+                
+                saving.save()
+                
+                dialog.destroy()
+                self.refresh_savings_list()
+                messagebox.showinfo("Thành công", "Đã cập nhật mục tiêu tiết kiệm!")
+                
+            except ValueError:
+                messagebox.showerror("Lỗi", "Dữ liệu không hợp lệ!")
+            except Exception as e:
+                messagebox.showerror("Lỗi", str(e))
+                
+        save_btn = ctk.CTkButton(
+            dialog.main_frame,
+            text="Lưu",
+            command=save_changes,
+            width=200,
+            height=40,
+            font=("Helvetica", 14, "bold")
+        )
+        save_btn.pack(pady=20)

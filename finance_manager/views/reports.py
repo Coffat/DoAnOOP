@@ -8,9 +8,11 @@ from models.transaction import Transaction
 from models.account import Account
 from models.loan import Loan
 from models.saving import Saving
+from config.colors import *
 import xlsxwriter
 import io
 import os
+import numpy as np
 
 class ReportsView:
     def __init__(self, parent):
@@ -24,23 +26,31 @@ class ReportsView:
         title = ctk.CTkLabel(
             self.parent,
             text="Báo Cáo Tài Chính",
-            font=("Helvetica", 24, "bold")
+            font=("Helvetica", 24, "bold"),
+            text_color=TEXT_CONTRAST['light']
         )
         title.pack(pady=20)
         
     def create_tabs(self):
         # Control Frame cho lựa chọn tài khoản và xuất báo cáo
-        control_frame = ctk.CTkFrame(self.parent)
+        control_frame = ctk.CTkFrame(
+            self.parent,
+            fg_color=BACKGROUND['dark']
+        )
         control_frame.pack(fill="x", padx=20, pady=10)
         
         # Left side - Account Selection
-        account_frame = ctk.CTkFrame(control_frame, fg_color="transparent")
+        account_frame = ctk.CTkFrame(
+            control_frame, 
+            fg_color="transparent"
+        )
         account_frame.pack(side="left", fill="x", expand=True)
         
         account_label = ctk.CTkLabel(
             account_frame, 
             text="🏦 Chọn Tài Khoản:",
-            font=("Helvetica", 14, "bold")
+            font=("Helvetica", 14, "bold"),
+            text_color=TEXT_CONTRAST['light']
         )
         account_label.pack(side="left", padx=10)
         
@@ -54,7 +64,11 @@ class ReportsView:
             width=250,
             height=35,
             font=("Helvetica", 12),
-            command=self.on_account_change
+            command=self.on_account_change,
+            fg_color=PRIMARY['main'],
+            button_color=PRIMARY['hover'],
+            button_hover_color=PRIMARY['light'],
+            text_color=TEXT_CONTRAST['light']
         )
         self.account_menu.pack(side="left", padx=10)
         
@@ -66,13 +80,17 @@ class ReportsView:
             width=180,
             height=35,
             font=("Helvetica", 12, "bold"),
-            fg_color="#2ecc71",
-            hover_color="#27ae60"
+            fg_color=SUCCESS['main'],
+            hover_color=SUCCESS['hover'],
+            text_color=TEXT_CONTRAST['light']
         )
         export_btn.pack(side="right", padx=20)
         
         # Tabview with custom style
-        self.tabview = ctk.CTkTabview(self.parent)
+        self.tabview = ctk.CTkTabview(
+            self.parent,
+            fg_color=BACKGROUND['dark']
+        )
         self.tabview.pack(fill="both", expand=True, padx=20, pady=10)
         
         # Add tabs with icons
@@ -84,7 +102,7 @@ class ReportsView:
         # Style the tabs
         for tab in [self.tab_income_expense, self.tab_cashflow, 
                    self.tab_category, self.tab_assets]:
-            tab.configure(fg_color=("gray95", "gray10"))
+            tab.configure(fg_color=BACKGROUND['dark'])
         
         # Create content for each tab
         self.create_income_expense_report(self.tab_income_expense)
@@ -93,7 +111,7 @@ class ReportsView:
         self.create_assets_report(self.tab_assets)
         
     def on_account_change(self, account_name):
-        """Cập nhật tất cả các báo cáo khi thay đổi tài khoản"""
+        """Xử lý khi thay đổi tài khoản"""
         # Xóa nội dung cũ của các tab
         for widget in self.tab_income_expense.winfo_children():
             widget.destroy()
@@ -115,74 +133,147 @@ class ReportsView:
         transactions = Transaction.get_all()
         
         if self.account_var.get() != "Tất cả tài khoản":
-            account = next(acc for acc in Account.get_all() 
-                         if acc.name == self.account_var.get())
-            transactions = [t for t in transactions if t.account_id == account.account_id]
+            try:
+                account = next(acc for acc in Account.get_all() 
+                             if acc.name == self.account_var.get())
+                
+                # Lọc các giao dịch liên quan đến tài khoản này
+                filtered_transactions = []
+                for t in transactions:
+                    new_transaction = None
+                    
+                    # Giao dịch trực tiếp của tài khoản
+                    if t.account_id == account.account_id:
+                        if t.type == "Chuyển tiền":
+                            # Kiểm tra xem là chuyển đi hay nhận vào
+                            if f"từ {account.name}" in t.category:
+                                # Chuyển tiền đi -> số tiền âm
+                                new_transaction = Transaction(
+                                    transaction_id=t.transaction_id,
+                                    date=t.date,
+                                    type="Chuyển tiền đi",
+                                    amount=-abs(t.amount),  # Đảm bảo số âm
+                                    category=t.category,
+                                    account_id=t.account_id,
+                                    note=t.note
+                                )
+                            elif f"đến {account.name}" in t.category:
+                                # Nhận tiền -> số tiền dương
+                                new_transaction = Transaction(
+                                    transaction_id=t.transaction_id,
+                                    date=t.date,
+                                    type="Chuyển tiền đến",
+                                    amount=abs(t.amount),  # Đảm bảo số dương
+                                    category=t.category,
+                                    account_id=t.account_id,
+                                    note=t.note
+                                )
+                        else:
+                            # Thu nhập -> dương, chi tiêu và tiết kiệm -> âm
+                            amount = abs(t.amount) if t.type == "Thu nhập" else -abs(t.amount)
+                            new_transaction = Transaction(
+                                transaction_id=t.transaction_id,
+                                date=t.date,
+                                type=t.type,
+                                amount=amount,
+                                category=t.category,
+                                account_id=t.account_id,
+                                note=t.note
+                            )
+                    
+                    # Giao dịch chuyển khoản từ tài khoản khác đến tài khoản này
+                    elif t.type == "Chuy���n tiền" and f"đến {account.name}" in t.category:
+                        new_transaction = Transaction(
+                            transaction_id=t.transaction_id,
+                            date=t.date,
+                            type="Chuyển tiền đến",
+                            amount=abs(t.amount),  # Đảm bảo số dương
+                            category=t.category,
+                            account_id=account.account_id,
+                            note=t.note
+                        )
+                    
+                    if new_transaction:
+                        filtered_transactions.append(new_transaction)
+                
+                transactions = filtered_transactions
+                
+            except StopIteration:
+                return []
             
-        # Sắp xếp theo ngày mới nhất
-        transactions.sort(key=lambda x: x.date, reverse=True)
+        # Sắp xếp theo ngày
+        transactions.sort(key=lambda x: datetime.strptime(x.date, "%Y-%m-%d"))
         return transactions
         
     def create_chart_frame(self, parent, title):
         """Helper function to create consistent chart frames"""
-        frame = ctk.CTkFrame(parent)
+        frame = ctk.CTkFrame(
+            parent,
+            fg_color=BACKGROUND['dark']
+        )
         frame.pack(fill="x", padx=10, pady=5)
         
         # Title with background
-        title_frame = ctk.CTkFrame(frame)
+        title_frame = ctk.CTkFrame(
+            frame,
+            fg_color=PRIMARY['main']
+        )
         title_frame.pack(fill="x", padx=5, pady=5)
         
         ctk.CTkLabel(
             title_frame,
             text=title,
-            font=("Helvetica", 16, "bold")
+            font=("Helvetica", 16, "bold"),
+            text_color=TEXT_CONTRAST['light']
         ).pack(pady=5)
         
         return frame
 
     def create_summary_frame(self, parent, title, content):
         """Helper function to create consistent summary frames"""
-        frame = ctk.CTkFrame(parent)
+        frame = ctk.CTkFrame(
+            parent,
+            fg_color=BACKGROUND['dark']
+        )
         frame.pack(fill="x", padx=10, pady=5)
         
         ctk.CTkLabel(
             frame,
             text=title,
-            font=("Helvetica", 14, "bold")
+            font=("Helvetica", 14, "bold"),
+            text_color=TEXT_CONTRAST['light']
         ).pack(pady=5)
         
         ctk.CTkLabel(
             frame,
             text=content,
             font=("Helvetica", 12),
+            text_color=TEXT_CONTRAST['light'],
             justify="left"
         ).pack(pady=5)
         
         return frame
 
     def create_income_expense_report(self, parent):
+        """Tạo báo cáo thu chi"""
         transactions = self.get_filtered_transactions()
         if not transactions:
-            # Hiển thị thông báo nếu không có dữ liệu
-            ctk.CTkLabel(
-                parent,
-                text=f"Không có dữ liệu giao dịch cho {self.account_var.get()}",
-                font=("Helvetica", 14)
-            ).pack(pady=20)
+            self.show_no_data_message(parent, "thu chi")
             return
-            
-        # Lấy mapping tài khoản trước khi xử lý dữ liệu
-        accounts = {acc.account_id: acc.name for acc in Account.get_all()}
             
         # Tính toán thu chi theo tháng
         df = pd.DataFrame([{
             'date': pd.to_datetime(t.date),
             'type': t.type,
-            'amount': t.amount
+            'amount': abs(t.amount)  # Sử dụng giá trị tuyệt đối cho biểu đồ
         } for t in transactions])
         
+        # Thêm cột tháng và năm
         df['month'] = df['date'].dt.strftime('%Y-%m')
-        monthly_stats = df.pivot_table(
+        
+        # Tính tổng theo loại giao dịch và tháng
+        monthly_stats = pd.pivot_table(
+            df,
             index='month',
             columns='type',
             values='amount',
@@ -190,186 +281,183 @@ class ReportsView:
             fill_value=0
         ).reset_index()
         
-        # Tạo biểu đồ với kích thước nhỏ hơn
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+        # Đảm bảo có đủ các cột cần thiết
+        required_columns = ['Thu nhập', 'Chi tiêu', 'Gửi tiết kiệm', 'Chuyển tiền']
+        for col in required_columns:
+            if col not in monthly_stats.columns:
+                monthly_stats[col] = 0
+            
+        # Tạo biểu đồ
+        self.create_monthly_chart(parent, monthly_stats)
         
-        # Biểu đồ cột thu chi theo tháng
-        months = monthly_stats['month'].tolist()
+        # Tạo bảng thống kê chi tiết
+        self.create_transaction_details(parent, transactions)
+
+    def show_no_data_message(self, parent, report_type):
+        """Hiển thị thông báo khi không có dữ liệu"""
+        message_frame = ctk.CTkFrame(parent, fg_color=BACKGROUND['dark'])
+        message_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        # Lấy dữ liệu thu chi từ pivot table
-        income_data = monthly_stats['Thu nhập'].tolist() if 'Thu nhập' in monthly_stats.columns else [0] * len(months)
-        expense_data = monthly_stats['Chi tiêu'].tolist() if 'Chi tiêu' in monthly_stats.columns else [0] * len(months)
-        savings_data = monthly_stats['Gửi tiết kiệm'].tolist() if 'Gửi tiết kiệm' in monthly_stats.columns else [0] * len(months)
+        ctk.CTkLabel(
+            message_frame,
+            text=f"❌ Không có dữ liệu {report_type}",
+            font=("Helvetica", 16, "bold"),
+            text_color=TEXT_CONTRAST['danger']
+        ).pack(pady=5)
         
-        x = range(len(months))
-        width = 0.25
+        # Thêm hướng dẫn cụ thể
+        if report_type == "thu chi":
+            guide_text = "Vui lòng thêm giao dịch thu/chi để xem báo cáo."
+        elif report_type == "dòng tiền":
+            guide_text = "Vui lòng thêm các giao dịch để xem dòng tiền."
+        elif report_type == "danh mục":
+            guide_text = "Vui lòng thêm giao dịch có danh mục để xem phân tích."
+        else:
+            guide_text = "Vui lòng thêm dữ liệu để xem báo cáo."
         
-        # Điều chỉnh font size và các thông số khác
-        ax1.bar([i - width for i in x], income_data, width, label='Thu nhập', color='green')
-        ax1.bar([i for i in x], expense_data, width, label='Chi tiêu', color='red')
-        ax1.bar([i + width for i in x], savings_data, width, label='Tiết kiệm', color='blue')
+        ctk.CTkLabel(
+            message_frame,
+            text=f"Tài khoản {self.account_var.get()} chưa có dữ liệu.\n{guide_text}",
+            font=("Helvetica", 14),
+            text_color=TEXT_CONTRAST['muted']
+        ).pack(pady=5)
+
+    def create_transaction_details(self, parent, transactions):
+        """Tạo bảng chi tiết giao dịch"""
+        details_frame = ctk.CTkFrame(parent, fg_color=BACKGROUND['dark'])
+        details_frame.pack(fill="x", padx=10, pady=5)
         
-        ax1.set_title(f'Thu Chi Theo Tháng ({self.account_var.get()})', fontsize=10)
-        ax1.set_xticks(x)
-        ax1.set_xticklabels(months, rotation=45, fontsize=8)
-        ax1.tick_params(axis='y', labelsize=8)
-        ax1.legend(fontsize=8)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x/1000000), ',') + 'M'))
-        
-        # Tính tổng thu chi
-        total_income = sum(income_data)
-        total_expense = sum(expense_data)
-        total_savings = sum(savings_data)
-        
-        # Biểu đồ tròn tổng thu chi
-        if total_income + total_expense + total_savings > 0:
-            ax2.pie(
-                [total_income, total_expense, total_savings],
-                labels=['Thu nhập', 'Chi tiêu', 'Tiết kiệm'],
-                autopct='%1.1f%%',
-                colors=['green', 'red', 'blue']
-            )
-            ax2.set_title('Tỷ Lệ Thu Chi')
-        
-        plt.tight_layout()
-        # Thêm biểu đồ vào frame
-        canvas = FigureCanvasTkAgg(fig, master=parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-        
-        # Thêm summary với style mới
-        summary_text = (
-            f"💵 Tổng thu nhập: {total_income:,.0f} VND\n"
-            f"💸 Tổng chi tiêu: {total_expense:,.0f} VND\n"
-            f"💰 Tổng tiết kiệm: {total_savings:,.0f} VND\n"
-            f"📈 Chênh lệch: {(total_income - total_expense - total_savings):,.0f} VND"
-        )
-        self.create_summary_frame(parent, "📑 Tổng Kết", summary_text)
-        
-        # Tạo bảng giao dịch
-        tree_frame = ctk.CTkFrame(parent)
-        tree_frame.pack(fill="x", padx=10, pady=5)
-        
-        # Tạo scrollbar
-        scrollbar = ttk.Scrollbar(tree_frame)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Tạo treeview
-        columns = ('Ngày', 'Loại', 'Số Tiền', 'Danh Mục', 'Tài Khoản', 'Ghi Chú')
-        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
-                           height=8, yscrollcommand=scrollbar.set)
-        scrollbar.config(command=tree.yview)
+        # Tạo Treeview cho chi tiết giao dịch
+        columns = ('Ngày', 'Loại', 'Số Tiền', 'Danh Mục', 'Ghi Chú')
+        tree = ttk.Treeview(details_frame, columns=columns, show='headings', height=5)
         
         # Cấu hình cột
-        tree.column('Ngày', width=100, minwidth=100)
-        tree.column('Loại', width=100, minwidth=100)
-        tree.column('Số Tiền', width=150, minwidth=150)
-        tree.column('Danh Mục', width=150, minwidth=150)
-        tree.column('Tài Khoản', width=150, minwidth=150)
-        tree.column('Ghi Chú', width=200, minwidth=200)
-        
-        # Đặt tiêu đề cột
         for col in columns:
             tree.heading(col, text=col)
+            tree.column(col, width=150)
         
-        # Tạo style cho từng loại giao dịch
-        tree.tag_configure('income', foreground='#27ae60')  # Xanh lá đậm
-        tree.tag_configure('expense', foreground='#c0392b')  # Đỏ đậm
-        tree.tag_configure('saving', foreground='#2980b9')  # Xanh dương đậm
-        tree.tag_configure('even_row', background='#f5f5f5')  # Màu nền cho dòng chẵn
-        tree.tag_configure('odd_row', background='#ffffff')  # Màu nền cho dòng lẻ
+        # Style cho Treeview
+        style = ttk.Style()
+        style.configure(
+            "Treeview",
+            background=BACKGROUND['dark'],
+            foreground=TEXT_CONTRAST['light'],
+            fieldbackground=BACKGROUND['dark']
+        )
+        
+        # Tags cho các loại giao dịch
+        tree.tag_configure('income', foreground=TRANSACTION_CONTRAST['income'])
+        tree.tag_configure('expense', foreground=TRANSACTION_CONTRAST['expense'])
+        tree.tag_configure('transfer_in', foreground=TRANSACTION_CONTRAST['transfer'])
+        tree.tag_configure('transfer_out', foreground=DANGER['main'])
+        tree.tag_configure('saving', foreground=TRANSACTION_CONTRAST['saving'])
         
         # Thêm dữ liệu vào bảng
-        for i, trans in enumerate(transactions):
-            values = (
-                trans.date,
-                trans.type,
-                f"{trans.amount:,.0f}",
-                trans.category,
-                accounts.get(trans.account_id, ""),
-                trans.note
-            )
+        for t in transactions:
+            # Xác định tag dựa vào loại giao dịch
+            if t.type == "Thu nhập":
+                tag = 'income'
+            elif t.type == "Chi tiêu":
+                tag = 'expense'
+            elif t.type == "Chuyển tiền đến":
+                tag = 'transfer_in'
+            elif t.type == "Chuyển tiền đi":
+                tag = 'transfer_out'
+            else:  # Tiết kiệm
+                tag = 'saving'
             
-            # Xác định tags cho từng dòng
-            tags = []
-            if trans.type == 'Thu nhập':
-                tags.append('income')
-            elif trans.type == 'Chi tiêu':
-                tags.append('expense')
-            elif trans.type == 'Gửi tiết kiệm':
-                tags.append('saving')
-                
-            # Thêm tag cho dòng chẵn/lẻ
-            tags.append('even_row' if i % 2 == 0 else 'odd_row')
-            
-            # Thêm dòng vào bảng với tags
-            tree.insert('', 'end', values=values, tags=tags)
+            tree.insert('', 'end', values=(
+                t.date,
+                t.type,
+                f"{abs(t.amount):,.0f}",
+                t.category,
+                t.note
+            ), tags=(tag,))
         
-        tree.pack(fill="x", expand=True)
-        
-        # Thêm chú thích màu
-        legend_frame = ctk.CTkFrame(parent)
-        legend_frame.pack(fill="x", padx=10, pady=5)
-        
-        # Thu nhập
-        income_label = ctk.CTkLabel(
-            legend_frame,
-            text="● Thu nhập",
-            text_color="#27ae60",
-            font=("Helvetica", 12, "bold")
-        )
-        income_label.pack(side="left", padx=10)
-        
-        # Chi tiêu
-        expense_label = ctk.CTkLabel(
-            legend_frame,
-            text="● Chi tiêu",
-            text_color="#c0392b",
-            font=("Helvetica", 12, "bold")
-        )
-        expense_label.pack(side="left", padx=10)
-        
-        # Tiết kiệm
-        saving_label = ctk.CTkLabel(
-            legend_frame,
-            text="● Tiết kiệm",
-            text_color="#2980b9",
-            font=("Helvetica", 12, "bold")
-        )
-        saving_label.pack(side="left", padx=10)
+        tree.pack(fill="x", padx=5, pady=5)
         
     def create_cashflow_report(self, parent):
+        """Tạo báo cáo dòng tiền"""
         transactions = self.get_filtered_transactions()
         if not transactions:
+            # Hiển thị thông báo nếu không có dữ liệu
+            message_frame = ctk.CTkFrame(parent, fg_color=BACKGROUND['dark'])
+            message_frame.pack(fill="both", expand=True, padx=20, pady=20)
+            
+            ctk.CTkLabel(
+                message_frame,
+                text="❌ Không có dữ liệu dòng tiền",
+                font=("Helvetica", 16, "bold"),
+                text_color=TEXT_CONTRAST['danger']
+            ).pack(pady=5)
+            
+            ctk.CTkLabel(
+                message_frame,
+                text=f"Tài khoản {self.account_var.get()} chưa có giao dịch nào.\nKhông thể tạo báo cáo dòng tiền.",
+                font=("Helvetica", 14),
+                text_color=TEXT_CONTRAST['muted']
+            ).pack(pady=5)
             return
             
         # Calculate cumulative cash flow
         df = pd.DataFrame([{
             'date': t.date,
-            'amount': t.amount if t.type == 'Thu nhập' else 
-                     (-t.amount if t.type == 'Chi tiêu' else 
-                     -t.amount if t.type == 'Gửi tiết kiệm' else 0)
+            'amount': (t.amount if t.type == 'Thu nhập' else 
+                      -t.amount if t.type == 'Chi tiêu' else 
+                      -t.amount if t.type == 'Gửi tiết kiệm' else 
+                      t.amount)  # Đã xử lý dấu trong get_filtered_transactions
         } for t in transactions])
         
         df['date'] = pd.to_datetime(df['date'])
         df = df.sort_values('date')
         df['cumulative'] = df['amount'].cumsum()
         
-        # Tạo biểu đồ với kích thước nhỏ hơn
-        fig, ax = plt.subplots(figsize=(10, 4))  # Giảm kích thước
+        # Điều chỉnh kích thước biểu đồ
+        fig, ax = plt.subplots(figsize=(10, 3.5), facecolor=BACKGROUND['dark'])
         
-        ax.plot(df['date'], df['cumulative'], marker='o', markersize=4)  # Giảm kích thước marker
-        ax.set_title(f'Dòng Tiền Tích Lũy ({self.account_var.get()})', fontsize=10)
-        ax.set_xlabel('Ngày', fontsize=9)
-        ax.set_ylabel('VND', fontsize=9)
-        ax.tick_params(axis='x', rotation=45, labelsize=8)
-        ax.tick_params(axis='y', labelsize=8)
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x/1000000), ',') + 'M'))
+        # Tạo gradient fill dưới đường
+        z = np.polyfit(range(len(df['cumulative'])), df['cumulative'], 1)
+        p = np.poly1d(z)
+        ax.fill_between(df['date'], df['cumulative'], alpha=0.2, 
+                       color=PRIMARY['light'])
         
-        # Add to frame
+        # Vẽ đường dòng tiền với style mới
+        line = ax.plot(df['date'], df['cumulative'], 
+                      color=PRIMARY['main'],
+                      marker='o', markersize=3,
+                      linewidth=1.5,
+                      markerfacecolor=PRIMARY['light'],
+                      markeredgecolor=PRIMARY['main'])
+        
+        # Thêm điểm bắt đầu và kết thúc
+        ax.plot(df['date'].iloc[0], df['cumulative'].iloc[0], 
+               'o', color=SUCCESS['main'], markersize=5,
+               label='Bắt đầu')
+        ax.plot(df['date'].iloc[-1], df['cumulative'].iloc[-1], 
+               'o', color=WARNING['main'], markersize=5,
+               label='Hiện tại')
+        
+        # Style cho biểu đồ
+        ax.set_title('Dòng Tiền Tích Lũy', 
+                    fontsize=9, color=TEXT_CONTRAST['light'], pad=10)
+        ax.set_facecolor(BACKGROUND['dark'])
+        ax.tick_params(axis='both', colors=TEXT_CONTRAST['light'], labelsize=7)
+        
+        # Thêm lưới với style mới
+        ax.grid(True, linestyle='--', alpha=0.1, color=TEXT_CONTRAST['light'])
+        
+        # Legend với font size nhỏ
+        ax.legend(fontsize=7, loc='upper left',
+                 facecolor=BACKGROUND['dark'],
+                 labelcolor=TEXT_CONTRAST['light'])
+        
+        plt.tight_layout(pad=2.0)
+        
+        # Thêm biểu đồ vào frame
         canvas = FigureCanvasTkAgg(fig, master=parent)
         canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill="both", expand=True, padx=10, pady=(5, 15))
         
         # Add summary text
         summary_text = (
@@ -380,8 +468,10 @@ class ReportsView:
         self.create_summary_frame(parent, "📑 Tổng Kết", summary_text)
         
     def create_category_report(self, parent):
+        """Tạo báo cáo theo danh mục"""
         transactions = self.get_filtered_transactions()
         if not transactions:
+            self.show_no_data_message(parent, "danh mục")
             return
             
         # Calculate totals by category
@@ -390,43 +480,58 @@ class ReportsView:
         savings_by_category = {}
         
         for t in transactions:
+            amount = abs(t.amount)  # Sử dụng giá trị tuyệt đối
             if t.type == 'Chi tiêu':
-                expense_by_category[t.category] = expense_by_category.get(t.category, 0) + t.amount
+                expense_by_category[t.category] = expense_by_category.get(t.category, 0) + amount
             elif t.type == 'Thu nhập':
-                income_by_category[t.category] = income_by_category.get(t.category, 0) + t.amount
+                income_by_category[t.category] = income_by_category.get(t.category, 0) + amount
             elif t.type == 'Gửi tiết kiệm':
-                savings_by_category[t.category] = savings_by_category.get(t.category, 0) + t.amount
+                savings_by_category[t.category] = savings_by_category.get(t.category, 0) + amount
                 
-        # Tạo biểu đồ với kích thước nhỏ hơn
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4))  # Giảm kích thước
+        # Tạo biểu đồ
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5), facecolor=BACKGROUND['dark'])
+        
+        # Style chung cho các biểu đồ
+        for ax in [ax1, ax2, ax3]:
+            ax.set_facecolor(BACKGROUND['dark'])
+            for spine in ax.spines.values():
+                spine.set_color(TEXT_CONTRAST['muted'])
         
         # Chi tiêu theo danh mục
         if expense_by_category:
             categories = list(expense_by_category.keys())
             amounts = list(expense_by_category.values())
-            total = sum(amounts)
-            ax1.pie(amounts, labels=categories, autopct='%1.1f%%', 
-                   textprops={'fontsize': 8})  # Giảm font size
-            ax1.set_title('Chi Tiêu Theo Danh Mục', fontsize=10)
+            if sum(amounts) > 0:  # Chỉ vẽ khi có giá trị dương
+                colors = [TRANSACTION_CONTRAST['expense']] * len(categories)
+                ax1.pie(amounts, labels=categories, colors=colors, autopct='%1.1f%%',
+                        textprops={'color': TEXT_CONTRAST['light']})
+            ax1.set_title('Chi Tiêu Theo Danh Mục', 
+                         fontsize=10, color=TEXT_CONTRAST['light'])
             
         # Thu nhập theo danh mục
         if income_by_category:
             categories = list(income_by_category.keys())
             amounts = list(income_by_category.values())
-            total = sum(amounts)
-            ax2.pie(amounts, labels=categories, autopct='%1.1f%%',
-                   textprops={'fontsize': 8})  # Giảm font size
-            ax2.set_title('Thu Nhập Theo Danh Mục', fontsize=10)
+            if sum(amounts) > 0:  # Chỉ vẽ khi có giá trị dương
+                colors = [TRANSACTION_CONTRAST['income']] * len(categories)
+                ax2.pie(amounts, labels=categories, colors=colors, autopct='%1.1f%%',
+                        textprops={'color': TEXT_CONTRAST['light']})
+            ax2.set_title('Thu Nhập Theo Danh Mục', 
+                         fontsize=10, color=TEXT_CONTRAST['light'])
             
         # Tiết kiệm theo mục tiêu
         if savings_by_category:
             categories = list(savings_by_category.keys())
             amounts = list(savings_by_category.values())
-            total = sum(amounts)
-            ax3.pie(amounts, labels=categories, autopct='%1.1f%%',
-                   textprops={'fontsize': 8})  # Giảm font size
-            ax3.set_title('Tiết Kiệm Theo Mục Tiêu', fontsize=10)
-            
+            if sum(amounts) > 0:  # Chỉ vẽ khi có giá trị dương
+                colors = [TRANSACTION_CONTRAST['saving']] * len(categories)
+                ax3.pie(amounts, labels=categories, colors=colors, autopct='%1.1f%%',
+                        textprops={'color': TEXT_CONTRAST['light']})
+            ax3.set_title('Tiết Kiệm Theo Mục Tiêu', 
+                         fontsize=10, color=TEXT_CONTRAST['light'])
+        
+        plt.tight_layout()
+        
         # Add to frame
         canvas = FigureCanvasTkAgg(fig, master=parent)
         canvas.draw()
@@ -438,25 +543,40 @@ class ReportsView:
         total_savings = sum(savings_by_category.values())
         
         summary_text = (
-            f"Tổng chi tiêu: {total_expense:,.0f} VND\n"
-            f"Tổng thu nhập: {total_income:,.0f} VND\n"
-            f"Tổng tiết kiệm: {total_savings:,.0f} VND"
+            f"💸 Tổng chi tiêu: {total_expense:,.0f} VND\n"
+            f"💵 Tổng thu nhập: {total_income:,.0f} VND\n"
+            f"💰 Tổng tiết kiệm: {total_savings:,.0f} VND"
         )
-        
-        summary_label = ctk.CTkLabel(
-            parent,
-            text=summary_text,
-            font=("Helvetica", 14)
-        )
-        summary_label.pack(pady=10)
+        self.create_summary_frame(parent, "📑 Tổng Kết", summary_text)
         
     def create_assets_report(self, parent):
+        """Tạo báo cáo tài sản"""
         # Get data for selected account
         if self.account_var.get() == "Tất cả tài khoản":
             accounts = Account.get_all()
         else:
-            accounts = [next(acc for acc in Account.get_all() 
-                           if acc.name == self.account_var.get())]
+            try:
+                accounts = [next(acc for acc in Account.get_all() 
+                               if acc.name == self.account_var.get())]
+            except StopIteration:
+                # Hiển thị thông báo nếu không tìm thấy tài khoản
+                message_frame = ctk.CTkFrame(parent, fg_color=BACKGROUND['dark'])
+                message_frame.pack(fill="both", expand=True, padx=20, pady=20)
+                
+                ctk.CTkLabel(
+                    message_frame,
+                    text="❌ Không tìm thấy tài khoản",
+                    font=("Helvetica", 16, "bold"),
+                    text_color=TEXT_CONTRAST['danger']
+                ).pack(pady=5)
+                
+                ctk.CTkLabel(
+                    message_frame,
+                    text=f"Không tìm thấy tài khoản {self.account_var.get()}.\nVui lòng kiểm tra lại.",
+                    font=("Helvetica", 14),
+                    text_color=TEXT_CONTRAST['muted']
+                ).pack(pady=5)
+                return
             
         loans = Loan.get_all()
         savings = Saving.get_all()
@@ -464,11 +584,32 @@ class ReportsView:
         # Filter loans and savings for selected account
         if self.account_var.get() != "Tất cả tài khoản":
             account = accounts[0]
+            # Lọc khoản vay dựa trên người vay/cho vay
             loans = [loan for loan in loans 
-                    if loan.from_account_id == account.account_id 
-                    or loan.to_account_id == account.account_id]
+                    if (loan.type == "Vay tiền" and loan.borrower_name == account.name) or
+                       (loan.type == "Cho vay" and loan.lender_name == account.name)]
             savings = [saving for saving in savings 
                       if saving.account_id == account.account_id]
+        
+        # Kiểm tra nếu không có dữ liệu
+        if not accounts and not loans and not savings:
+            message_frame = ctk.CTkFrame(parent, fg_color=BACKGROUND['dark'])
+            message_frame.pack(fill="both", expand=True, padx=20, pady=20)
+            
+            ctk.CTkLabel(
+                message_frame,
+                text="❌ Không có dữ liệu tài sản",
+                font=("Helvetica", 16, "bold"),
+                text_color=TEXT_CONTRAST['danger']
+            ).pack(pady=5)
+            
+            ctk.CTkLabel(
+                message_frame,
+                text=f"Tài khoản {self.account_var.get()} chưa có dữ liệu tài sản nào.\nVui lòng thêm tài khoản, khoản vay hoặc tiết kiệm.",
+                font=("Helvetica", 14),
+                text_color=TEXT_CONTRAST['muted']
+            ).pack(pady=5)
+            return
         
         # Calculate totals
         total_assets = sum(acc.balance for acc in accounts)
@@ -478,36 +619,69 @@ class ReportsView:
         
         net_worth = total_assets + total_loans - total_debts + total_savings
         
-        # Tạo biểu đồ với kích thước nhỏ hơn
-        fig, ax = plt.subplots(figsize=(8, 4))  # Giảm kích thước
+        # Tạo biểu đồ chỉ khi có dữ liệu
+        if total_assets > 0 or total_loans > 0 or total_debts > 0 or total_savings > 0:
+            # Tạo biểu đồ
+            fig, ax = plt.subplots(figsize=(12, 5), facecolor=BACKGROUND['dark'])
+            
+            # Chuẩn bị dữ liệu cho biểu đồ
+            labels = ['Tài khoản', 'Cho vay', 'Nợ', 'Tiết kiệm']
+            sizes = [total_assets, total_loans, total_debts, total_savings]
+            colors = [PRIMARY['main'], SUCCESS['main'], DANGER['main'], WARNING['main']]
+            
+            # Vẽ biểu đồ tròn
+            wedges, texts, autotexts = ax.pie(
+                sizes,
+                labels=labels,
+                colors=colors,
+                autopct='%1.1f%%',
+                startangle=90,
+                textprops={'color': TEXT_CONTRAST['light']}
+            )
+            
+            # Style cho biểu đồ
+            ax.set_facecolor(BACKGROUND['dark'])
+            ax.set_title(
+                f'Phân Bổ Tài Sản ({self.account_var.get()})',
+                fontsize=12,
+                color=TEXT_CONTRAST['light'],
+                pad=20
+            )
+            
+            # Thêm chú thích
+            ax.legend(
+                wedges,
+                labels,
+                title="Thành phần",
+                loc="center left",
+                bbox_to_anchor=(1, 0, 0.5, 1),
+                facecolor=BACKGROUND['dark'],
+                labelcolor=TEXT_CONTRAST['light']
+            )
+            
+            plt.tight_layout()
+            
+            # Add to frame
+            canvas = FigureCanvasTkAgg(fig, master=parent)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill="both", expand=True)
+        else:
+            ctk.CTkLabel(
+                parent,
+                text="Không đủ dữ liệu để tạo biểu đồ",
+                font=("Helvetica", 14),
+                text_color=TEXT_CONTRAST['muted']
+            ).pack(pady=20)
         
-        labels = ['Tài khoản', 'Cho vay', 'Tiết kiệm']
-        sizes = [total_assets, total_loans, total_savings]
-        colors = ['lightblue', 'lightgreen', 'orange']
-        
-        ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%',
-               textprops={'fontsize': 8})  # Giảm font size
-        ax.set_title(f'Phân Bổ Tài Sản ({self.account_var.get()})', fontsize=10)
-        
-        canvas = FigureCanvasTkAgg(fig, master=parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-        
-        # Add summary text
+        # Luôn hiển thị summary text
         summary_text = (
-            f"Số dư tài khoản: {total_assets:,.0f} VND\n"
-            f"Cho vay: {total_loans:,.0f} VND\n"
-            f"Nợ: {total_debts:,.0f} VND\n"
-            f"Tiết kiệm: {total_savings:,.0f} VND\n"
-            f"Giá trị ròng: {net_worth:,.0f} VND"
+            f"💰 Số dư tài khoản: {total_assets:,.0f} VND\n"
+            f"💸 Cho vay: {total_loans:,.0f} VND\n"
+            f"💳 Nợ: {total_debts:,.0f} VND\n"
+            f"🏦 Tiết kiệm: {total_savings:,.0f} VND\n"
+            f"📈 Giá trị ròng: {net_worth:,.0f} VND"
         )
-        
-        summary_label = ctk.CTkLabel(
-            parent,
-            text=summary_text,
-            font=("Helvetica", 14)
-        )
-        summary_label.pack(pady=10)
+        self.create_summary_frame(parent, "📑 Tổng Kết", summary_text)
         
     def create_buttons(self):
         button_frame = ctk.CTkFrame(self.parent)
@@ -693,10 +867,10 @@ class ReportsView:
                 } for saving in savings]
                 
                 df_assets = pd.DataFrame(account_data + loan_data + saving_data)
-                df_assets.to_excel(writer, sheet_name='Tài Sản', index=False)
+                df_assets.to_excel(writer, sheet_name='Ti Sản', index=False)
                 
                 # Định dạng Sheet Tài Sản
-                worksheet = writer.sheets['Tài Sản']
+                worksheet = writer.sheets['Ti Sản']
                 for col_num, value in enumerate(df_assets.columns.values):
                     worksheet.write(0, col_num, value, header_format)
                 worksheet.set_column('C:C', 15, money_format)
@@ -707,3 +881,87 @@ class ReportsView:
             
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể xuất Excel: {str(e)}")
+
+    def create_monthly_chart(self, parent, monthly_stats):
+        """Tạo biểu đồ thu chi theo tháng"""
+        # Tạo biểu đồ với kích thước nhỏ hơn và nền tối
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.5), facecolor=BACKGROUND['dark'])
+        
+        # Tăng khoảng cách giữa các subplot và thêm padding
+        plt.subplots_adjust(wspace=0.3, left=0.1, right=0.9, bottom=0.15, top=0.85)
+        
+        # Biểu đồ cột thu chi theo tháng
+        months = monthly_stats['month'].tolist()
+        x = range(len(months))
+        width = 0.2  # Giảm độ rộng của cột
+        
+        # Đảm bảo có đủ các cột dữ liệu
+        for col in ['Thu nhập', 'Chi tiêu', 'Gửi tiết kiệm', 'Chuyển tiền đến', 'Chuyển tiền đi']:
+            if col not in monthly_stats.columns:
+                monthly_stats[col] = 0
+        
+        # Vẽ các cột với độ rộng nhỏ hơn và màu sắc tương phản
+        bars = []
+        positions = [-width*1.5, -width/2, width/2, width*1.5]
+        colors = [TRANSACTION_CONTRAST['income'], 
+                 TRANSACTION_CONTRAST['expense'],
+                 TRANSACTION_CONTRAST['saving'],
+                 TRANSACTION_CONTRAST['transfer']]
+        labels = ['Thu nhập', 'Chi tiêu', 'Tiết kiệm', 'Chuyển khoản']
+        
+        # Vẽ biểu đồ cột
+        for i, (pos, col, color, label) in enumerate(zip(positions, 
+                                                    ['Thu nhập', 'Chi tiêu', 'Gửi tiết kiệm', 
+                                                     'Chuyển tiền đến'],
+                                                    colors, labels)):
+            data = monthly_stats[col].tolist()
+            bar = ax1.bar([i + pos for i in x], data, width*0.8, 
+                         label=label, color=color)
+            bars.append(bar)
+        
+        # Style cho biểu đồ cột
+        ax1.set_title('Thu Chi Theo Tháng', fontsize=9, color=TEXT_CONTRAST['light'], pad=10)
+        ax1.set_facecolor(BACKGROUND['dark'])
+        ax1.tick_params(axis='both', colors=TEXT_CONTRAST['light'], labelsize=7)
+        ax1.set_xticks(x)
+        ax1.set_xticklabels(months, rotation=45, ha='right')
+        
+        # Thêm lưới với style mới
+        ax1.grid(True, linestyle='--', alpha=0.1, color=TEXT_CONTRAST['light'])
+        
+        # Legend với font size nhỏ hơn và vị trí tốt hơn
+        ax1.legend(fontsize=7, 
+                  loc='upper right',
+                  bbox_to_anchor=(1, 1),
+                  facecolor=BACKGROUND['dark'],
+                  labelcolor=TEXT_CONTRAST['light'])
+        
+        # Biểu đồ tròn
+        totals = [
+            monthly_stats['Thu nhập'].sum(),
+            monthly_stats['Chi tiêu'].sum(),
+            monthly_stats['Gửi tiết kiệm'].sum(),
+            monthly_stats['Chuyển tiền đến'].sum()
+        ]
+        
+        if sum(totals) > 0:
+            ax2.pie(totals,
+                    labels=labels,
+                    colors=colors,
+                    autopct='%1.1f%%',
+                    textprops={'color': TEXT_CONTRAST['light'], 'fontsize': 7})
+            ax2.set_title('Tỷ Lệ Thu Chi', 
+                         fontsize=9, 
+                         color=TEXT_CONTRAST['light'],
+                         pad=10)
+        
+        ax2.set_facecolor(BACKGROUND['dark'])
+        
+        # Thêm padding cho toàn bộ figure
+        plt.tight_layout()
+        
+        # Thêm biểu đồ vào frame với padding nhỏ hơn
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.draw()
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill="both", expand=True, padx=5, pady=5)

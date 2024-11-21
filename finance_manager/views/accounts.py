@@ -4,6 +4,7 @@ from datetime import datetime
 from models.account import Account
 from config.settings import ACCOUNT_TYPES
 from .dialog import Dialog
+from config.colors import *
 
 class AccountsView:
     def __init__(self, parent):
@@ -32,8 +33,9 @@ class AccountsView:
             text="➕ Thêm Tài Khoản Mới",
             command=self.show_add_dialog,
             font=("Helvetica", 13, "bold"),
-            fg_color="#2ecc71",
-            hover_color="#27ae60"
+            fg_color=SUCCESS['main'],
+            hover_color=SUCCESS['hover'],
+            text_color=TEXT['light']
         )
         add_btn.pack(side="left", padx=5)
         
@@ -42,8 +44,9 @@ class AccountsView:
             text="✏️ Chỉnh Sửa",
             command=self.edit_selected_account,
             font=("Helvetica", 13, "bold"),
-            fg_color="#3498db",
-            hover_color="#2980b9"
+            fg_color=PRIMARY['main'],
+            hover_color=PRIMARY['hover'],
+            text_color=TEXT['light']
         )
         edit_btn.pack(side="left", padx=5)
         
@@ -52,8 +55,9 @@ class AccountsView:
             text="🗑️ Xóa",
             command=self.delete_selected_account,
             font=("Helvetica", 13, "bold"),
-            fg_color="#e74c3c",
-            hover_color="#c0392b"
+            fg_color=DANGER['main'],
+            hover_color=DANGER['hover'],
+            text_color=TEXT['light']
         )
         delete_btn.pack(side="left", padx=5)
         
@@ -84,18 +88,24 @@ class AccountsView:
         style.configure("Treeview",
                        font=('Helvetica', 11),
                        rowheight=35,
-                       background="#2c3e50",
-                       foreground="white",
-                       fieldbackground="#2c3e50")
+                       background=BACKGROUND['dark'],
+                       foreground=TEXT_CONTRAST['light'],
+                       fieldbackground=BACKGROUND['dark'])
         
         style.configure("Treeview.Heading",
                        font=('Helvetica', 12, 'bold'),
-                       background="#34495e",
-                       foreground="white")
+                       background=BACKGROUND['dark'],
+                       foreground=TEXT_CONTRAST['light'])
         
-        self.tree.tag_configure('bank', background='#3498db')
-        self.tree.tag_configure('cash', background='#2ecc71')
-        self.tree.tag_configure('ewallet', background='#9b59b6')
+        self.tree.tag_configure('bank', 
+                              background=PRIMARY['main'],
+                              foreground=TEXT_CONTRAST['light'])
+        self.tree.tag_configure('cash', 
+                              background=SUCCESS['main'],
+                              foreground=TEXT_CONTRAST['light'])
+        self.tree.tag_configure('ewallet', 
+                              background=WARNING['main'],
+                              foreground=TEXT_CONTRAST['light'])
         
         self.refresh_accounts_list()
         self.tree.pack(fill="both", expand=True, padx=5, pady=5)
@@ -219,7 +229,7 @@ class AccountsView:
         account_name = self.tree.item(item)['values'][1]
         
         # Xác nhận xóa
-        if not messagebox.askyesno("Xác nhận", f"B���n có chắc muốn xóa tài khoản '{account_name}'?"):
+        if not messagebox.askyesno("Xác nhận", f"Bn có chắc muốn xóa tài khoản '{account_name}'?"):
             return
             
         # Xóa tài khoản

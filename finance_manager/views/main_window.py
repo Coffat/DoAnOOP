@@ -6,6 +6,7 @@ from views.loans import LoansView
 from views.savings import SavingsView
 from views.reports import ReportsView
 from views.forecast_view import ForecastView
+from config.colors import *
 
 class MainWindow:
     def __init__(self):
@@ -41,21 +42,23 @@ class MainWindow:
         self.main_container.pack(fill="both", expand=True, padx=20, pady=20)
         
     def create_sidebar(self):
-        self.sidebar = ctk.CTkFrame(self.main_container, width=250)
+        self.sidebar = ctk.CTkFrame(
+            self.main_container, 
+            width=250,
+            fg_color=BACKGROUND['dark']
+        )
         self.sidebar.pack(side="left", fill="y", padx=10, pady=10)
         
         # Logo
         logo_label = ctk.CTkLabel(
             self.sidebar, 
             text="Finance Manager",
-            font=("Helvetica", 24, "bold")
+            font=("Helvetica", 24, "bold"),
+            text_color=TEXT['light']
         )
         logo_label.pack(pady=30)
         
         # Navigation buttons
-        self.create_nav_buttons()
-        
-    def create_nav_buttons(self):
         buttons = [
             ("🏠 Dashboard", self.show_dashboard),
             ("💳 Tài Khoản", self.show_accounts), 
@@ -75,8 +78,9 @@ class MainWindow:
                 height=40,
                 font=("Helvetica", 14),
                 anchor="w",
-                fg_color="#2980b9",
-                hover_color="#2471a3"
+                fg_color=PRIMARY['main'],
+                hover_color=PRIMARY['hover'],
+                text_color=TEXT['light']
             )
             btn.pack(pady=10)
             

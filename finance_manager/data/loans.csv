@@ -1,3 +1,2 @@
 loan_id,type,lender_name,borrower_name,amount,interest_rate,start_date,due_date,payment_period,interest_type,status,remaining_principal,total_paid_principal,total_paid_interest,note
-1,Vay tiền,Ngân hàng,Tôi,20000000.0,3.0,2024-11-21,2030-12-12,Hàng quý,Lãi kép,Đang vay,20000000.0,0.0,0.0,
-2,Cho vay,Huy,Tài,20000000.0,12.0,2024-11-21,2024-11-22,Hàng tháng,Lãi kép,Đang vay,18500000.0,1500000.0,0.0,
+1,Vay tiền,Ngân hàng,Tôi,20000000.0,3.0,2024-11-21,2024-12-12,Hàng quý,Lãi kép,Đang vay,19535354.0,464646.0,0.0,
