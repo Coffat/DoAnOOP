@@ -5,7 +5,7 @@ from views.transactions import TransactionsView
 from views.loans import LoansView
 from views.savings import SavingsView
 from views.reports import ReportsView
-from views.forecast_window import ForecastWindow
+from views.forecast_view import ForecastView
 
 class MainWindow:
     def __init__(self):
@@ -27,6 +27,7 @@ class MainWindow:
         self.loans = LoansView(self.content_frame)
         self.savings = SavingsView(self.content_frame)
         self.reports = ReportsView(self.content_frame)
+        self.forecast = ForecastView(self.content_frame)
         
         # Show dashboard by default
         self.show_dashboard()
@@ -108,8 +109,8 @@ class MainWindow:
         self.reports.show()
         
     def show_forecast(self):
-        forecast_window = ForecastWindow(self.window)
-        forecast_window.grab_set()
+        self.clear_content()
+        self.forecast.show()
         
     def clear_content(self):
         for widget in self.content_frame.winfo_children():

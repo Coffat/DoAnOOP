@@ -6,15 +6,18 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import locale
 
-class ForecastWindow(ctk.CTkToplevel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.title("Dự báo tài chính")
-        self.geometry("1400x800")
-        self.minsize(1200, 700)
+class ForecastView:
+    def __init__(self, parent):
+        self.parent = parent
+        self.frame = None
         
-        # Thiết lập style cơ bản cho matplotlib
-        plt.style.use('default')
+        # Màu sắc chủ đạo với độ tương phản cao hơn
+        self.PRIMARY_COLOR = "#3498db"  # Xanh dương đậm hơn cho tiêu đề và nút chính
+        self.HEADER_BG = "#2980b9"      # Màu nền header
+        self.INPUT_BG = "#ecf0f1"       # Màu nền nhẹ cho khu vực input
+        self.BUTTON_PRIMARY = "#27ae60"  # Xanh lá cho nút chính
+        self.BUTTON_SECONDARY = "#7f8c8d" # Xám cho nút phụ
+        self.ERROR_COLOR = "#c0392b"     # Đỏ đậm cho thông báo lỗi
         
         try:
             locale.setlocale(locale.LC_ALL, 'vi_VN.UTF-8')
@@ -23,151 +26,210 @@ class ForecastWindow(ctk.CTkToplevel):
                 locale.setlocale(locale.LC_ALL, 'vi_VN')
             except locale.Error:
                 locale.setlocale(locale.LC_ALL, '')
+
+    def show(self):
+        if self.frame:
+            self.frame.destroy()
+            
+        self.frame = ctk.CTkFrame(self.parent)
+        self.frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        # Tạo các widget cho giao diện
-        self.create_widgets()
-        
-    def create_widgets(self):
-        # Frame chính
-        self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Header frame
-        header_frame = ctk.CTkFrame(self.main_frame)
+        # Header với màu nền mới
+        header_frame = ctk.CTkFrame(self.frame, fg_color=self.HEADER_BG)
         header_frame.pack(fill="x", padx=10, pady=(0, 20))
         
-        # Label tiêu đề với icon
-        self.title_label = ctk.CTkLabel(
+        ctk.CTkLabel(
             header_frame, 
-            text="🔮 Dự Báo Tài Chính Tương Lai", 
-            font=("Helvetica", 28, "bold")
-        )
-        self.title_label.pack(pady=10)
+            text="🔮 Dự Báo Tài Chính", 
+            font=("Helvetica", 24, "bold"),
+            text_color="white"
+        ).pack(pady=10)
         
-        # Subtitle
-        self.subtitle_label = ctk.CTkLabel(
+        ctk.CTkLabel(
             header_frame,
             text="Lập kế hoạch tài chính và theo dõi mục tiêu của bạn",
-            font=("Helvetica", 14)
-        )
-        self.subtitle_label.pack()
+            font=("Helvetica", 14),
+            text_color="#ecf0f1"  # Màu chữ sáng hơn trên nền tối
+        ).pack(pady=(0, 10))
 
-        # Content frame
-        content_frame = ctk.CTkFrame(self.main_frame)
-        content_frame.pack(fill="both", expand=True, padx=10)
+        # Content container với màu nền sáng
+        content = ctk.CTkFrame(self.frame, fg_color="white")
+        content.pack(fill="both", expand=True, padx=10)
         
-        # Left panel for inputs (30% width)
-        left_panel = ctk.CTkFrame(content_frame, width=400)
+        # Left panel với màu nền nhẹ
+        left_panel = ctk.CTkFrame(content, width=350, fg_color=self.INPUT_BG)
         left_panel.pack(side="left", fill="y", padx=(0, 10), pady=10)
         left_panel.pack_propagate(False)
         
-        # Input section title
-        input_title = ctk.CTkLabel(
-            left_panel,
+        # Input section title với style mới
+        input_header = ctk.CTkFrame(left_panel, fg_color=self.PRIMARY_COLOR, height=40)
+        input_header.pack(fill="x", pady=(0, 15))
+        input_header.pack_propagate(False)
+        
+        ctk.CTkLabel(
+            input_header,
             text="📝 Thông Tin Dự Báo",
-            font=("Helvetica", 18, "bold")
-        )
-        input_title.pack(pady=10)
+            font=("Helvetica", 16, "bold"),
+            text_color="white"
+        ).pack(expand=True)
         
-        # Create input fields
-        self.create_input_fields(left_panel)
+        self.create_input_section(left_panel)
         
-        # Right panel for results (70% width)
-        right_panel = ctk.CTkFrame(content_frame)
+        # Right panel với layout cải tiến
+        right_panel = ctk.CTkFrame(content)
         right_panel.pack(side="left", fill="both", expand=True, pady=10)
         
-        # Tạo frame container cho chart và details
-        right_container = ctk.CTkFrame(right_panel)
-        right_container.pack(fill="both", expand=True)
+        # Chart area với border và shadow
+        chart_container = ctk.CTkFrame(right_panel, fg_color="white")
+        chart_container.pack(fill="both", expand=True, padx=10, pady=(0, 5))
         
-        # Chart frame (chiếm 70% chiều cao)
-        self.chart_frame = ctk.CTkFrame(right_container)
-        self.chart_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+        self.chart_frame = ctk.CTkFrame(chart_container, fg_color="transparent")
+        self.chart_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Details frame (chiếm 30% chiều cao)
-        details_container = ctk.CTkFrame(right_container, height=200)  # Set height cho frame
+        # Details area với style mới
+        details_container = ctk.CTkFrame(right_panel, height=180, fg_color="#f8f9fa")
         details_container.pack(fill="x", padx=10, pady=(5, 0))
-        details_container.pack_propagate(False)  # Ngăn frame co lại
+        details_container.pack_propagate(False)
         
-        # Frame cho nội dung chi tiết
-        self.details_frame = ctk.CTkFrame(details_container)
+        self.details_frame = ctk.CTkFrame(details_container, fg_color="transparent")
         self.details_frame.pack(fill="both", expand=True, padx=5, pady=5)
 
-    def create_input_fields(self, parent):
-        # Frame cho các trường nhập liệu
-        input_container = ctk.CTkFrame(parent)
+    def create_input_section(self, parent):
+        # Container cho các input
+        input_container = ctk.CTkFrame(parent, fg_color="transparent")
         input_container.pack(fill="x", padx=20, pady=10)
         
-        # Style cho labels và entries
+        # Style cho input fields
         label_font = ("Helvetica", 12)
-        entry_width = 200
+        entry_width = 250
         
-        # Thu nhập hiện tại
-        self.create_input_group(input_container, "💰 Thu nhập hàng tháng:", "income_entry", "0", label_font, entry_width)
+        # Thu nhập hiện tại với style mới
+        income_frame = self.create_input_group(
+            input_container, 
+            "💰 Thu nhập hàng tháng:",
+            "income_entry",
+            "0",
+            label_font,
+            entry_width,
+            self.PRIMARY_COLOR
+        )
         
         # Chi tiêu hiện tại
-        self.create_input_group(input_container, "💸 Chi tiêu hàng tháng:", "expense_entry", "0", label_font, entry_width)
+        expense_frame = self.create_input_group(
+            input_container,
+            "💸 Chi tiêu hàng tháng:",
+            "expense_entry",
+            "0",
+            label_font,
+            entry_width,
+            self.PRIMARY_COLOR
+        )
         
         # Tăng trưởng dự kiến
-        self.create_input_group(input_container, "📈 Tăng trưởng hàng năm (%):", "growth_entry", "5", label_font, entry_width)
+        growth_frame = self.create_input_group(
+            input_container,
+            "📈 Tăng trưởng hàng năm (%):",
+            "growth_entry",
+            "5",
+            label_font,
+            entry_width,
+            self.PRIMARY_COLOR
+        )
         
-        # Thời gian dự báo
-        period_frame = ctk.CTkFrame(input_container)
-        period_frame.pack(fill="x", pady=10)
+        # Thời gian dự báo với style mới
+        period_frame = ctk.CTkFrame(input_container, fg_color="transparent")
+        period_frame.pack(fill="x", pady=15)
         
-        period_label = ctk.CTkLabel(period_frame, text="⏳ Thời gian dự báo (tháng):", font=label_font)
+        # Label với màu chữ đậm hơn
+        period_label = ctk.CTkLabel(
+            period_frame,
+            text="⏳ Thời gian dự báo:",
+            font=("Helvetica", 12, "bold"),
+            text_color="#2c3e50"  # Màu chữ đậm để dễ nhìn
+        )
         period_label.pack(anchor="w", pady=(0, 5))
         
-        self.period_var = ctk.StringVar(value="12")
-        periods = ["6", "12", "24", "36", "60"]
+        self.period_var = ctk.StringVar(value="12 tháng")
+        periods = ["6 tháng", "12 tháng", "24 tháng", "36 tháng", "60 tháng"]
+        
+        # Dropdown với style mới
         self.period_option = ctk.CTkOptionMenu(
             period_frame,
             values=periods,
             variable=self.period_var,
-            width=entry_width
+            width=250,  # Tăng width cho phù hợp với các input khác
+            height=35,  # Tăng height cho dễ nhìn
+            fg_color=self.PRIMARY_COLOR,  # Màu nền của dropdown
+            button_color=self.PRIMARY_COLOR,  # Màu nút dropdown
+            button_hover_color="#2980b9",  # Màu hover của nút
+            text_color="white",  # Màu chữ của giá trị được chọn
+            dropdown_fg_color="white",  # Màu nền của dropdown menu
+            dropdown_hover_color="#f5f6fa",  # Màu hover trong dropdown
+            dropdown_text_color="#2c3e50",  # Màu chữ trong dropdown
+            font=("Helvetica", 12),  # Font size phù hợp
+            anchor="w"  # Căn lề trái cho text
         )
         self.period_option.pack(anchor="w")
         
-        # Button frame
-        button_frame = ctk.CTkFrame(parent)
+        # Button frame với style mới
+        button_frame = ctk.CTkFrame(parent, fg_color="transparent")
         button_frame.pack(fill="x", padx=20, pady=20)
         
-        # Nút tạo dự báo
+        # Nút tạo dự báo với màu mới
         self.update_button = ctk.CTkButton(
             button_frame,
             text="🔮 Tạo Dự Báo",
             command=self.update_forecast,
             font=("Helvetica", 14, "bold"),
             height=45,
-            fg_color="#2ecc71",
-            hover_color="#27ae60"
+            fg_color=self.BUTTON_PRIMARY,
+            hover_color="#219a52",  # Màu hover tối hơn
+            corner_radius=8,
+            text_color="white"
         )
         self.update_button.pack(fill="x", pady=(0, 10))
         
-        # Nút làm mới
+        # Nút làm mới với màu mới
         self.reset_button = ctk.CTkButton(
             button_frame,
             text="🔄 Làm Mới",
             command=self.reset_inputs,
             font=("Helvetica", 14),
             height=45,
-            fg_color="#95a5a6",
-            hover_color="#7f8c8d"
+            fg_color=self.BUTTON_SECONDARY,
+            hover_color="#6c7a89",  # Màu hover tối hơn
+            corner_radius=8,
+            text_color="white"
         )
         self.reset_button.pack(fill="x")
 
-    def create_input_group(self, parent, label_text, entry_name, default_value, label_font, entry_width):
-        frame = ctk.CTkFrame(parent)
+    def create_input_group(self, parent, label_text, entry_name, default_value, label_font, entry_width, accent_color):
+        frame = ctk.CTkFrame(parent, fg_color="transparent")
         frame.pack(fill="x", pady=10)
         
-        label = ctk.CTkLabel(frame, text=label_text, font=label_font)
+        label = ctk.CTkLabel(
+            frame,
+            text=label_text,
+            font=label_font,
+            text_color="#2c3e50"  # Màu chữ đậm hơn
+        )
         label.pack(anchor="w", pady=(0, 5))
         
-        entry = ctk.CTkEntry(frame, width=entry_width)
+        entry = ctk.CTkEntry(
+            frame,
+            width=entry_width,
+            height=35,
+            corner_radius=8,
+            border_color=accent_color,
+            fg_color="white",
+            text_color="#2c3e50",  # Màu chữ đậm cho dễ đọc
+            placeholder_text_color="#95a5a6"  # Màu placeholder nhạt hơn
+        )
         entry.pack(anchor="w")
         entry.insert(0, default_value)
         
         setattr(self, entry_name, entry)
+        return frame
 
     def reset_inputs(self):
         self.income_entry.delete(0, 'end')
@@ -185,42 +247,42 @@ class ForecastWindow(ctk.CTkToplevel):
             widget.destroy()
 
     def format_currency(self, amount):
-        """Format số tiền theo định dạng tiền tệ"""
         try:
-            return locale.currency(amount, grouping=True, symbol='VND')
-        except locale.Error:
-            # Fallback nếu locale không hỗ trợ currency
             return f"{amount:,.0f} VND"
+        except:
+            return "0 VND"
 
     def show_error_dialog(self, message):
-        """Hiển thị dialog lỗi tự tạo thay vì dùng CTkMessagebox"""
-        error_window = ctk.CTkToplevel(self)
+        error_window = ctk.CTkToplevel(self.frame)
         error_window.title("Lỗi")
         error_window.geometry("400x200")
-        
-        # Đặt cửa sổ lỗi ở giữa cửa sổ chính
-        error_window.transient(self)
+        error_window.transient(self.frame)
         error_window.grab_set()
         
-        # Icon và message
+        # Style mới cho dialog
+        error_frame = ctk.CTkFrame(error_window)
+        error_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
         ctk.CTkLabel(
-            error_window,
+            error_frame,
             text="⚠️",
             font=("Helvetica", 48)
         ).pack(pady=10)
         
         ctk.CTkLabel(
-            error_window,
+            error_frame,
             text=message,
-            font=("Helvetica", 12)
+            font=("Helvetica", 12),
+            wraplength=300
         ).pack(pady=10)
         
-        # Nút OK
         ctk.CTkButton(
-            error_window,
-            text="OK",
+            error_frame,
+            text="Đóng",
             command=error_window.destroy,
-            width=100
+            width=100,
+            fg_color=self.ERROR_COLOR,
+            hover_color="#c0392b"
         ).pack(pady=10)
 
     def update_forecast(self):
@@ -253,25 +315,21 @@ class ForecastWindow(ctk.CTkToplevel):
             expense_forecast = [monthly_expense * (1 + monthly_growth/2) ** i for i in months_range]
             savings_forecast = [i - e for i, e in zip(income_forecast, expense_forecast)]
 
-            # Điều chỉnh kích thước biểu đồ nhỏ hơn nữa
-            fig, ax = plt.subplots(figsize=(6, 3.5), dpi=100)  # Giảm kích thước xuống (6, 3.5)
+            # Vẽ biểu đồ
+            fig, ax = plt.subplots(figsize=(6, 3.5), dpi=100)
             
-            # Thiết lập style cho biểu đồ
             ax.set_facecolor('#ffffff')
             fig.patch.set_facecolor('#ffffff')
             
-            # Thêm lưới đơn giản
             ax.grid(True, linestyle='--', alpha=0.15, color='#666666', which='major')
             ax.grid(False, which='minor')
             
-            # Vẽ vùng tiết kiệm
             ax.fill_between(months_range, income_forecast, expense_forecast, 
                            alpha=0.08, color='#2ecc71')
             
-            # Vẽ các đường chính với kích thước nhỏ hơn
             line_income = ax.plot(months_range, income_forecast, 
                                 color='#2ecc71', label='Thu nhập', 
-                                marker='o', linewidth=1.5, markersize=4,  # Giảm kích thước marker
+                                marker='o', linewidth=1.5, markersize=4,
                                 markerfacecolor='white', markeredgewidth=1)[0]
             
             line_expense = ax.plot(months_range, expense_forecast, 
@@ -304,12 +362,10 @@ class ForecastWindow(ctk.CTkToplevel):
                                         fc='#e74c3c', ec='none', alpha=0.2),
                                fontsize=7)
 
-            # Tùy chỉnh trục và tiêu đề với font size nhỏ hơn
             ax.set_xlabel('Thời gian (tháng)', fontsize=8, labelpad=6)
             ax.set_ylabel('Số tiền (VND)', fontsize=8, labelpad=6)
             ax.set_title('Biểu Đồ Dự Báo Tài Chính', fontsize=10, pad=10)
 
-            # Format trục y
             def format_money(x, p):
                 if x >= 1e9:
                     return f'{x/1e9:.1f}B'
@@ -320,12 +376,10 @@ class ForecastWindow(ctk.CTkToplevel):
             
             ax.yaxis.set_major_formatter(plt.FuncFormatter(format_money))
             
-            # Tùy chỉnh nhãn trục x
             x_labels = ['HT' if i == 0 else f'T{i}' for i in months_range]
             plt.xticks(months_range, x_labels, rotation=45, fontsize=7)
             plt.yticks(fontsize=7)
             
-            # Tùy chỉnh legend nhỏ gọn hơn
             legend = ax.legend(
                 loc='upper center',
                 bbox_to_anchor=(0.5, -0.25),
@@ -341,21 +395,17 @@ class ForecastWindow(ctk.CTkToplevel):
                 columnspacing=0.8
             )
             
-            # Điều chỉnh layout
             plt.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.28)
             
-            # Thêm watermark nhỏ hơn
             fig.text(0.95, 0.02, 'Finance Manager',
                     fontsize=6, color='#999999',
                     ha='right', va='bottom',
                     alpha=0.4, style='italic')
             
-            # Thêm viền mỏng cho biểu đồ
             for spine in ax.spines.values():
                 spine.set_edgecolor('#dddddd')
                 spine.set_linewidth(0.3)
             
-            # Hiển thị biểu đồ trong frame với padding nhỏ hơn
             canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
             canvas.draw()
             canvas_widget = canvas.get_tk_widget()
@@ -370,18 +420,15 @@ class ForecastWindow(ctk.CTkToplevel):
             self.show_error_dialog(f"Có lỗi xảy ra: {str(e)}")
 
     def show_forecast_details(self, months, income, expense, savings):
-        # Tạo frame cho thông tin chi tiết
         details_container = ctk.CTkFrame(self.details_frame)
         details_container.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Tính toán các chỉ số
         total_savings = sum(savings)
         avg_monthly_savings = total_savings / months if months > 0 else 0
         final_monthly_income = income[-1]
         final_monthly_expense = expense[-1]
         savings_rate = (final_monthly_income - final_monthly_expense) / final_monthly_income * 100 if final_monthly_income > 0 else 0
         
-        # Hiển thị các chỉ số
         metrics = [
             ("💰 Thu nhập cuối kỳ:", self.format_currency(final_monthly_income)),
             ("💸 Chi tiêu cuối kỳ:", self.format_currency(final_monthly_expense)),
@@ -390,7 +437,6 @@ class ForecastWindow(ctk.CTkToplevel):
             ("📊 Tỷ lệ tiết kiệm:", f"{savings_rate:.1f}%")
         ]
         
-        # Tạo grid 2x3 cho metrics
         for i, (label, value) in enumerate(metrics):
             frame = ctk.CTkFrame(details_container)
             frame.grid(row=i//2, column=i%2, padx=10, pady=5, sticky="nsew")
@@ -407,12 +453,5 @@ class ForecastWindow(ctk.CTkToplevel):
                 font=("Helvetica", 14, "bold")
             ).pack(side="right", padx=10, pady=5)
 
-        # Cấu hình grid
         details_container.grid_columnconfigure(0, weight=1)
         details_container.grid_columnconfigure(1, weight=1)
-
-    def format_currency(self, amount):
-        try:
-            return f"{amount:,.0f} VND"
-        except:
-            return "0 VND"
