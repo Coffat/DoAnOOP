@@ -5,3 +5,4 @@ transaction_id,date,type,amount,category,account_id,note
 4,2024-11-21,Gửi tiết kiệm,120000.0,mua nhà,1,
 5,2024-11-21,Chuyển tiền,200000.0,Chuyển tiền từ VietComBank đến Momo,1,
 6,2024-11-21,Thu nhập,800000.0,Tiền lương,1,
+7,2024-11-21,Chi tiêu,2000000.0,Ăn uống,1,
