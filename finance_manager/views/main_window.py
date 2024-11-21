@@ -5,6 +5,7 @@ from views.transactions import TransactionsView
 from views.loans import LoansView
 from views.savings import SavingsView
 from views.reports import ReportsView
+from views.forecast_window import ForecastWindow
 
 class MainWindow:
     def __init__(self):
@@ -60,7 +61,8 @@ class MainWindow:
             ("💰 Giao Dịch", self.show_transactions),
             ("💸 Vay & Cho Vay", self.show_loans),
             ("🏦 Tiết Kiệm", self.show_savings),
-            ("📊 Báo Cáo", self.show_reports)
+            ("📊 Báo Cáo", self.show_reports),
+            ("🔮 Dự Báo", self.show_forecast)
         ]
         
         for text, command in buttons:
@@ -71,9 +73,9 @@ class MainWindow:
                 width=220,
                 height=40,
                 font=("Helvetica", 14),
-                anchor="w",  # Căn lề trái cho text
-                fg_color="#2980b9",  # Màu nền xanh dương
-                hover_color="#2471a3"  # Màu hover đậm hơn
+                anchor="w",
+                fg_color="#2980b9",
+                hover_color="#2471a3"
             )
             btn.pack(pady=10)
             
@@ -104,6 +106,10 @@ class MainWindow:
     def show_reports(self):
         self.clear_content()
         self.reports.show()
+        
+    def show_forecast(self):
+        forecast_window = ForecastWindow(self.window)
+        forecast_window.grab_set()
         
     def clear_content(self):
         for widget in self.content_frame.winfo_children():

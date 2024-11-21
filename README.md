@@ -1,30 +1,22 @@
+# Finance Manager - Ứng Dụng Quản Lý Tài Chính Cá Nhân
 
-# Finance Manager
-
-Ứng dụng quản lý tài chính cá nhân được xây dựng bằng Python và CustomTkinter.
+## Giới thiệu
+Finance Manager là một ứng dụng desktop giúp người dùng quản lý tài chính cá nhân một cách hiệu quả. Ứng dụng được phát triển bằng Python với giao diện người dùng hiện đại sử dụng CustomTkinter.
 
 ## Tính năng chính
+- 🏠 **Dashboard**: Tổng quan về tình hình tài chính
+- 💳 **Quản lý tài khoản**: Theo dõi số dư các tài khoản
+- 💰 **Quản lý giao dịch**: Ghi chép thu chi
+- 💸 **Quản lý khoản vay**: Theo dõi các khoản vay và cho vay
+- 🏦 **Quản lý tiết kiệm**: Theo dõi các khoản tiết kiệm
+- 📊 **Báo cáo**: Phân tích và thống kê tài chính
+- 🔮 **Dự báo**: Dự báo tài chính tương lai
 
-### 1. Quản lý Tài khoản
-- Thêm, sửa, xóa tài khoản
-- Hỗ trợ nhiều loại tài khoản: Tiền mặt, Tài khoản ngân hàng, Ví điện tử
-- Theo dõi số dư theo thời gian thực
-- Kiểm tra trùng lặp tên tài khoản
-
-### 2. Quản lý Giao dịch
-- Ghi nhận các loại giao dịch: Thu nhập, Chi tiêu, Chuyển tiền, Gửi tiết kiệm
-- Phân loại giao dịch theo danh mục
-- Tự động cập nhật số dư tài khoản
-- Hỗ trợ chỉnh sửa và xóa giao dịch với hoàn lại số dư
-
-### 3. Báo cáo Tài chính
-- Biểu đồ thu chi theo tháng
-- Phân tích dòng tiền
-- Thống kê theo danh mục
-- Báo cáo tài sản
+## Yêu cầu hệ thống
+- Python 3.8 trở lên
+- Các thư viện được liệt kê trong file requirements.txt
 
 ## Cài đặt
-
 1. Clone repository:
 ```bash
 git clone https://github.com/yourusername/finance-manager.git
