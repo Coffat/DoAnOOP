@@ -297,7 +297,10 @@ class ForecastView:
             monthly_income = float(self.income_entry.get().replace(',', ''))
             monthly_expense = float(self.expense_entry.get().replace(',', ''))
             annual_growth = float(self.growth_entry.get().replace(',', ''))
-            months = int(self.period_var.get())
+            
+            # Sửa cách lấy số tháng từ period_var
+            period_str = self.period_var.get()  # Ví dụ: "12 tháng"
+            months = int(period_str.split()[0])  # Lấy số từ chuỗi, ví dụ: 12
 
             if monthly_income <= 0:
                 raise ValueError("Thu nhập phải lớn hơn 0")

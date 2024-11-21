@@ -1,1 +1,2 @@
 payment_id,loan_id,payment_date,amount,principal_amount,interest_amount,note
+1,2,2024-11-21,1500000.0,1500000.0,0.0,
