@@ -1,84 +1,84 @@
-# Màu chủ đạo - Xanh dương đậm với độ tương phản cao
+# Màu chủ đạo - Xanh dương nhẹ nhàng
 PRIMARY = {
-    'main': '#1a73e8',      # Xanh dương Google
-    'hover': '#1557b0',     # Xanh dương tối hơn
-    'light': '#4285f4'      # Xanh dương nhạt
+    'main': '#3b82f6',      # Xanh dương nhẹ
+    'hover': '#2563eb',     # Xanh dương đậm khi hover
+    'light': '#60a5fa'      # Xanh dương nhạt
 }
 
 # Màu thứ cấp - Xám trung tính
 SECONDARY = {
-    'main': '#5f6368',      # Xám Google
-    'hover': '#3c4043',     # Xám tối
-    'light': '#9aa0a6'      # Xám nhạt
+    'main': '#64748b',      # Xám trung tính
+    'hover': '#475569',     # Xám tối
+    'light': '#94a3b8'      # Xám nhạt
 }
 
-# Màu thành công - Xanh lá tươi
+# Màu thành công - Xanh lá dịu mắt
 SUCCESS = {
-    'main': '#0f9d58',      # Xanh lá Google
-    'hover': '#0b8043',     # Xanh lá tối
-    'light': '#34a853'      # Xanh lá nhạt
+    'main': '#22c55e',      # Xanh lá nhẹ
+    'hover': '#16a34a',     # Xanh lá đậm
+    'light': '#4ade80'      # Xanh lá nhạt
 }
 
-# Màu cảnh báo - Cam nổi bật
+# Màu cảnh báo - Cam nhẹ nhàng
 WARNING = {
-    'main': '#f4b400',      # Vàng Google
-    'hover': '#f09300',     # Cam tối
-    'light': '#fbbc04'      # Vàng nhạt
+    'main': '#f97316',      # Cam nhẹ
+    'hover': '#ea580c',     # Cam đậm
+    'light': '#fb923c'      # Cam nhạt
 }
 
-# Màu lỗi/xóa - Đỏ tươi
+# Màu lỗi/xóa - Đỏ dịu mắt
 DANGER = {
-    'main': '#ea4335',      # Đỏ Google
-    'hover': '#d93025',     # Đỏ tối
-    'light': '#ff5252'      # Đỏ nhạt
+    'main': '#ef4444',      # Đỏ nhẹ
+    'hover': '#dc2626',     # Đỏ đậm
+    'light': '#f87171'      # Đỏ nhạt
 }
 
 # Màu nền - Tối ưu cho mắt
 BACKGROUND = {
-    'main': '#ffffff',      # Trắng thuần
-    'dark': '#202124',      # Đen Google
-    'light': '#f8f9fa'      # Xám rất nhạt
-}
-
-# Màu text - Độ tương phản cao
-TEXT = {
-    'primary': '#202124',   # Đen Google
-    'secondary': '#5f6368', # Xám Google
+    'main': '#f8fafc',      # Trắng xám nhẹ
+    'dark': '#1e293b',      # Xanh đen nhẹ
     'light': '#ffffff'      # Trắng thuần
 }
 
-# Màu cho các loại giao dịch - Dễ phân biệt
+# Màu text - Dễ đọc
+TEXT = {
+    'primary': '#0f172a',   # Xanh đen nhẹ
+    'secondary': '#475569', # Xám đậm
+    'light': '#f1f5f9'      # Trắng xám nhẹ
+}
+
+# Màu cho các loại giao dịch - Dễ phân biệt và dịu mắt
 TRANSACTION_CONTRAST = {
-    'income': '#34a853',    # Xanh lá Google
-    'expense': '#ea4335',   # Đỏ Google
-    'transfer': '#4285f4',  # Xanh dương Google
-    'saving': '#fbbc04'     # Vàng Google
+    'income': '#22c55e',    # Xanh lá nhẹ cho thu nhập
+    'expense': '#ef4444',   # Đỏ nhẹ cho chi tiêu
+    'transfer': '#3b82f6',  # Xanh dương nhẹ cho chuyển khoản
+    'saving': '#f97316'     # Cam nhẹ cho tiết kiệm
 }
 
-# Màu cho text với độ tương phản cao
+# Màu cho text với độ tương phản vừa phải
 TEXT_CONTRAST = {
-    'dark': '#202124',      # Đen Google
-    'light': '#ffffff',     # Trắng thuần
-    'success': '#34a853',   # Xanh lá Google
-    'warning': '#fbbc04',   # Vàng Google
-    'danger': '#ea4335',    # Đỏ Google
-    'info': '#4285f4',      # Xanh dương Google
-    'muted': '#9aa0a6'      # Xám nhạt Google
+    'dark': '#1e293b',      # Xanh đen nhẹ
+    'light': '#f1f5f9',     # Trắng xám nhẹ
+    'success': '#22c55e',   # Xanh lá nhẹ
+    'warning': '#f97316',   # Cam nhẹ
+    'danger': '#ef4444',    # Đỏ nhẹ
+    'info': '#3b82f6',      # Xanh dương nhẹ
+    'muted': '#94a3b8'      # Xám nhạt
 }
 
-# Màu cho trạng thái - Dễ nhận biết
+# Màu cho trạng thái - Dễ nhận biết và dịu mắt
 STATUS_CONTRAST = {
-    'active': '#34a853',    # Xanh lá Google - Hoạt động
-    'pending': '#fbbc04',   # Vàng Google - Chờ xử lý
-    'overdue': '#ea4335',   # Đỏ Google - Quá hạn
-    'completed': '#4285f4'  # Xanh dương Google - Hoàn thành
+    'active': '#22c55e',    # Xanh lá nhẹ - Hoạt động
+    'pending': '#f97316',   # Cam nhẹ - Chờ xử lý
+    'overdue': '#ef4444',   # Đỏ nhẹ - Quá hạn
+    'completed': '#3b82f6'  # Xanh dương nhẹ - Hoàn thành
 }
 
-# Màu cho biểu đồ - Tương phản cao
+# Màu cho biểu đồ - Hài hòa và dễ nhìn
 CHART_COLORS = {
-    'primary': ['#4285f4', '#34a853', '#fbbc04', '#ea4335'],  # Màu Google chính
-    'secondary': ['#1a73e8', '#0f9d58', '#f4b400', '#d93025'], # Màu Google phụ
-    'background': '#202124',  # Nền tối
-    'grid': '#5f6368',       # Lưới xám
-    'text': '#ffffff'        # Chữ trắng
+    'primary': ['#3b82f6', '#22c55e', '#f97316', '#ef4444'],  # Màu chính nhẹ nhàng
+    'secondary': ['#60a5fa', '#4ade80', '#fb923c', '#f87171'], # Màu phụ nhạt
+    'background': '#1e293b', # Nền tối dịu
+    'grid': '#475569',      # Lưới xám nhẹ
+    'text': '#f1f5f9'       # Chữ sáng dịu
 } 

@@ -42,50 +42,87 @@ class MainWindow:
         self.main_container.pack(fill="both", expand=True, padx=20, pady=20)
         
     def create_sidebar(self):
+        # Tạo sidebar với màu nền tối hơn
         self.sidebar = ctk.CTkFrame(
             self.main_container, 
             width=250,
-            fg_color=BACKGROUND['dark']
+            fg_color="#0a0f1a"  # Màu nền tối hơn
         )
         self.sidebar.pack(side="left", fill="y", padx=10, pady=10)
         
-        # Logo
+        # Logo với style mới
+        logo_frame = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="transparent"
+        )
+        logo_frame.pack(pady=(20, 30))
+        
         logo_label = ctk.CTkLabel(
-            self.sidebar, 
+            logo_frame, 
             text="Finance Manager",
             font=("Helvetica", 24, "bold"),
-            text_color=TEXT['light']
+            text_color="#ffffff"  # Màu chữ trắng hoàn toàn
         )
-        logo_label.pack(pady=30)
+        logo_label.pack()
         
-        # Navigation buttons
+        # Navigation buttons với màu tương phản cao hơn
         buttons = [
-            ("🏠 Dashboard", self.show_dashboard),
-            ("💳 Tài Khoản", self.show_accounts), 
-            ("💰 Giao Dịch", self.show_transactions),
-            ("💸 Vay & Cho Vay", self.show_loans),
-            ("🏦 Tiết Kiệm", self.show_savings),
-            ("📊 Báo Cáo", self.show_reports),
-            ("🔮 Dự Báo", self.show_forecast)
+            ("🏠 Dashboard", self.show_dashboard, "#1d4ed8"),    # Xanh dương đậm
+            ("💳 Tài Khoản", self.show_accounts, "#0369a1"),    # Xanh ngọc đậm
+            ("💰 Giao Dịch", self.show_transactions, "#047857"), # Xanh lục đậm
+            ("💸 Vay & Cho Vay", self.show_loans, "#6d28d9"),   # Tím đậm
+            ("🏦 Tiết Kiệm", self.show_savings, "#be185d"),     # Hồng đậm
+            ("📊 Báo Cáo", self.show_reports, "#9f1239"),       # Đỏ hồng đậm
+            ("🔮 Dự Báo", self.show_forecast, "#991b1b")        # Đỏ đậm
         ]
         
-        for text, command in buttons:
+        for text, command, color in buttons:
             btn = ctk.CTkButton(
                 self.sidebar,
                 text=text,
                 command=command,
                 width=220,
-                height=40,
-                font=("Helvetica", 14),
+                height=45,
+                font=("Helvetica", 14, "bold"),
                 anchor="w",
-                fg_color=PRIMARY['main'],
-                hover_color=PRIMARY['hover'],
-                text_color=TEXT['light']
+                fg_color="transparent",
+                hover_color=color,      # Màu hover đậm hơn
+                text_color="#ffffff",   # Màu chữ trắng hoàn toàn
+                corner_radius=8         # Bo góc ít hơn để tăng độ tương phản
             )
-            btn.pack(pady=10)
+            btn.pack(pady=6)
             
+            # Hiệu ứng hover với độ tương phản cao hơn
+            def on_enter(e, button=btn, hover_color=color):
+                button.configure(
+                    fg_color=hover_color,
+                    text_color="#ffffff"  # Giữ màu chữ trắng khi hover
+                )
+                
+            def on_leave(e, button=btn):
+                button.configure(
+                    fg_color="transparent",
+                    text_color="#ffffff"  # Giữ màu chữ trắng khi không hover
+                )
+                
+            btn.bind("<Enter>", on_enter)
+            btn.bind("<Leave>", on_leave)
+        
+        # Version tag với màu tương phản thấp
+        version_label = ctk.CTkLabel(
+            self.sidebar,
+            text="v1.0.0",
+            font=("Helvetica", 10),
+            text_color="#64748b"  # Màu chữ xám nhạt hơn
+        )
+        version_label.pack(side="bottom", pady=20)
+        
     def create_content_frame(self):
-        self.content_frame = ctk.CTkFrame(self.main_container)
+        # Content frame với màu nền sáng hơn
+        self.content_frame = ctk.CTkFrame(
+            self.main_container,
+            fg_color="#ffffff"  # Màu nền trắng cho content
+        )
         self.content_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
         
     def show_dashboard(self):
