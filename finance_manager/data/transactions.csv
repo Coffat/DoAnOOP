@@ -8,3 +8,5 @@ transaction_id,date,type,amount,category,account_id,note
 7,2024-11-21,Chi tiêu,2000000.0,Ăn uống,1,
 8,2024-11-21,Chuyển tiền,2323232.0,Chuyển tiền từ Vi Tiền đến VietComBank,3,error
 9,2024-11-21,Gửi tiết kiệm,2000000.0,mua nhà,1,
+10,2024-11-22,Chuyển tiền,232.0,Chuyển tiền từ Vi Tiền đến VietComBank,3,
+11,2024-11-22,Chuyển tiền,2000000.0,Chuyển tiền từ VietComBank đến Vi Tiền,1,

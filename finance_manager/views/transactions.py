@@ -390,60 +390,34 @@ class TransactionsView:
                 target_account = next(acc for acc in Account.get_all() 
                                     if acc.name == self.target_account_var.get())
                 
-                # Kiểm tra nếu có tài khoản tiền mặt
-                if source_account.type == "Tiền mặt" or target_account.type == "Tiền mặt":
-                    # Tạo giao dịch với ghi chú error
-                    transactions = Transaction.get_all()
-                    new_id = len(transactions) + 1
+                # Kiểm tra số dư tài khoản nguồn
+                if source_account.balance < amount:
+                    messagebox.showerror("Lỗi", "Số dư tài khoản không đủ!")
+                    return
                     
-                    transaction = Transaction(
-                        transaction_id=new_id,
-                        date=datetime.now().strftime("%Y-%m-%d"),
-                        type=trans_type,
-                        amount=amount,
-                        category=f"Chuyển tiền từ {source_account.name} đến {target_account.name}",
-                        account_id=source_account.account_id,
-                        note="error"
-                    )
-                    transaction.save()
-                    
-                    # Thông báo lỗi
-                    messagebox.showerror(
-                        "Thông báo",
-                        "Giao dịch không thành công!\n\n"
-                        "Lý do: Không thể chuyển khoản với tài khoản tiền mặt.\n"
-                        "Giao dịch đã được lưu với ghi chú 'error'."
-                    )
-                    
-                else:
-                    # Kiểm tra số dư tài khoản nguồn
-                    if source_account.balance < amount:
-                        messagebox.showerror("Lỗi", "Số dư tài khoản không đủ!")
-                        return
-                        
-                    # Cập nhật số dư các tài khoản
-                    source_account.balance -= amount
-                    target_account.balance += amount
-                    
-                    source_account.save()
-                    target_account.save()
-                    
-                    # Tạo giao dịch chuyển tiền thành công
-                    transactions = Transaction.get_all()
-                    new_id = len(transactions) + 1
-                    
-                    transaction = Transaction(
-                        transaction_id=new_id,
-                        date=datetime.now().strftime("%Y-%m-%d"),
-                        type=trans_type,
-                        amount=amount,
-                        category=f"Chuyển tiền từ {source_account.name} đến {target_account.name}",
-                        account_id=source_account.account_id,
-                        note=self.note_entry.get()
-                    )
-                    transaction.save()
-                    
-                    messagebox.showinfo("Thành công", "Đã chuyển tiền thành công!")
+                # Cập nhật số dư các tài khoản
+                source_account.balance -= amount
+                target_account.balance += amount
+                
+                source_account.save()
+                target_account.save()
+                
+                # Tạo giao dịch chuyển tiền thành công
+                transactions = Transaction.get_all()
+                new_id = len(transactions) + 1
+                
+                transaction = Transaction(
+                    transaction_id=new_id,
+                    date=datetime.now().strftime("%Y-%m-%d"),
+                    type=trans_type,
+                    amount=amount,
+                    category=f"Chuyển tiền từ {source_account.name} đến {target_account.name}",
+                    account_id=source_account.account_id,
+                    note=self.note_entry.get()
+                )
+                transaction.save()
+                
+                messagebox.showinfo("Thành công", "Đã chuyển tiền thành công!")
                 
             elif trans_type == "Gửi tiết kiệm":
                 # Kiểm tra có chọn mục tiêu tiết kiệm không
